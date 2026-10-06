@@ -15,7 +15,7 @@ import {
 
 import PageBanner from "@/components/PageBanner";
 import SectionTitle from "@/components/SectionTitle";
-import CTASection from "@/components/CTASection";
+// import CTASection from "@/components/CTASection";
 
 export default function ProductsPage() {
 
@@ -181,7 +181,7 @@ export default function ProductsPage() {
         subtitle="Explore advanced biomedical and diagnostic equipment designed for modern healthcare excellence."
       />
 
-      <section className="py-24 bg-gradient-to-br from-[#FDFBD4] via-[#FBFAF2] to-[#D9D7B6]">
+      <section className="py-24 bg-gradient-to-br from-[#ECFDF5] via-[#F8FAFC] to-[#D1FAE5]">
 
         <div className="max-w-7xl mx-auto px-5">
 
@@ -197,115 +197,113 @@ export default function ProductsPage() {
                 LEFT SIDEBAR
           ====================== */}
 
-         <aside className="sticky top-28 h-fit rounded-[32px] border border-[#D9D7B6] bg-white/85 p-6 shadow-2xl backdrop-blur">
+            <aside className="sticky top-28 h-fit rounded-[32px] border border-[#D1FAE5] bg-white/85 p-6 shadow-2xl backdrop-blur">
 
-  {/* Heading */}
+              {/* Heading */}
 
-  <div className="mb-6">
+              <div className="mb-6">
 
-    <span className="inline-flex rounded-full border border-[#D9D7B6] bg-[#D9D7B6]/40 px-4 py-2 text-sm font-semibold text-[#545333]">
+                <span className="inline-flex rounded-full border border-[#D1FAE5] bg-[#D1FAE5]/40 px-4 py-2 text-sm font-semibold text-[#15803D]">
 
-      Browse
+                  Browse
 
-    </span>
+                </span>
 
-    <h2 className="mt-4 text-2xl font-bold text-[#545333]">
+                <h2 className="mt-4 text-2xl font-bold text-[#15803D]">
 
-      Categories
+                  Categories
 
-    </h2>
+                </h2>
 
-  </div>
+              </div>
 
-  {/* Search */}
+              {/* Search */}
 
-  <input
-    type="text"
-    placeholder="Search Products..."
-    value={search}
-    onChange={(e) => setSearch(e.target.value)}
-    className="h-12 w-full rounded-xl border border-[#D9D7B6] bg-[#FDFBD4] px-4 text-[#545333] outline-none transition-all duration-300 placeholder:text-[#878672] focus:border-[#545333] focus:bg-white focus:ring-4 focus:ring-[#D9D7B6]"
-  />
+              <input
+                type="text"
+                placeholder="Search Products..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-12 w-full rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] px-4 text-[#15803D] outline-none transition-all duration-300 placeholder:text-[#64748B] focus:border-[#15803D] focus:bg-white focus:ring-4 focus:ring-[#D1FAE5]"
+              />
 
-  {/* Categories */}
+              {/* Categories */}
 
-  <div className="mt-6 space-y-3">
+              <div className="mt-6 space-y-3">
 
-    {categories.map((category) => (
+                {categories.map((category) => (
 
-      <div
-        key={category}
-        className="overflow-hidden rounded-2xl border border-[#D9D7B6]"
-      >
+                  <div
+                    key={category}
+                    className="overflow-hidden rounded-2xl border border-[#D1FAE5]"
+                  >
 
-        <button
-          onClick={() => toggleCategory(category)}
-          className={`flex w-full items-center justify-between px-5 py-4 font-medium transition-all duration-300 ${
-            activeCategory === category
-              ? "bg-[#545333] text-[#FDFBD4] shadow-lg"
-              : "bg-white text-[#545333] hover:bg-[#FDFBD4]"
-          }`}
-        >
+                    <button
+                      onClick={() => toggleCategory(category)}
+                      className={`flex w-full items-center justify-between px-5 py-4 font-medium transition-all duration-300 ${activeCategory === category
+                        ? "bg-[#15803D] text-[#ECFDF5] shadow-lg"
+                        : "bg-white text-[#15803D] hover:bg-[#ECFDF5]"
+                        }`}
+                    >
 
-          <span className="flex items-center gap-3">
+                      <span className="flex items-center gap-3">
 
-            {openedCategory === category ? (
-              <ChevronDown size={18} />
-            ) : (
-              <ChevronRight size={18} />
-            )}
+                        {openedCategory === category ? (
+                          <ChevronDown size={18} />
+                        ) : (
+                          <ChevronRight size={18} />
+                        )}
 
-            {category}
+                        {category}
 
-          </span>
+                      </span>
 
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-bold ${
-              activeCategory === category
-                ? "bg-white/20 text-[#FDFBD4]"
-                : "bg-[#D9D7B6] text-[#545333]"
-            }`}
-          >
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-bold ${activeCategory === category
+                          ? "bg-white/20 text-[#ECFDF5]"
+                          : "bg-[#D1FAE5] text-[#15803D]"
+                          }`}
+                      >
 
-            {groupedProducts[category].length}
+                        {groupedProducts[category].length}
 
-          </span>
+                      </span>
 
-        </button>
+                    </button>
 
-        <div
-          className="overflow-hidden transition-all duration-300"
-          style={{
-            maxHeight:
-              openedCategory === category
-                ? groupedProducts[category].length * 48 + "px"
-                : "0px",
-          }}
-        >
+                    <div
+                      className="overflow-hidden transition-all duration-300"
+                      style={{
+                        maxHeight:
+                          openedCategory === category
+                            ? groupedProducts[category].length * 48 + "px"
+                            : "0px",
+                      }}
+                    >
 
-          {groupedProducts[category].map((item) => (
+                      {groupedProducts[category].map((item) => (
 
-            <button
-              key={item.slug}
-              onClick={() => scrollToProduct(item.slug, category)}
-              className="block w-full border-t border-[#D9D7B6] px-6 py-3 text-left text-sm text-[#6A6954] transition-all duration-300 hover:bg-[#FDFBD4] hover:text-[#545333]"
-            >
+                        <button
+                          key={item.slug}
+                          onClick={() => scrollToProduct(item.slug, category)}
+                          className="block w-full border-t border-[#D1FAE5] px-6 py-3 text-left text-sm text-[#64748B] transition-all duration-300 hover:bg-[#ECFDF5] hover:text-[#15803D]"
+                        >
 
-              {item.title}
+                          {item.title}
 
-            </button>
+                        </button>
 
-          ))}
+                      ))}
 
-        </div>
+                    </div>
 
-      </div>
+                  </div>
 
-    ))}
+                ))}
 
-  </div>
+              </div>
 
-</aside>
+            </aside>
 
             {/* ======================
                 RIGHT SIDE
@@ -313,161 +311,161 @@ export default function ProductsPage() {
 
             <div>
 
-         <div className="space-y-16">
+              <div className="space-y-16">
 
-  {Object.entries(groupedProducts).map(([category, list]) => (
+                {Object.entries(groupedProducts).map(([category, list]) => (
 
-    <section
-      key={category}
-      id={category.replace(/\s+/g, "-").toLowerCase()}
-    >
+                  <section
+                    key={category}
+                    id={category.replace(/\s+/g, "-").toLowerCase()}
+                  >
 
-      {/* Category Header */}
+                    {/* Category Header */}
 
-      <div className="mb-10 flex items-center justify-between border-b border-[#D9D7B6] pb-5">
+                    <div className="mb-10 flex items-center justify-between border-b border-[#D1FAE5] pb-5">
 
-        <div>
+                      <div>
 
-          <span className="inline-flex rounded-full border border-[#D9D7B6] bg-[#D9D7B6]/40 px-4 py-2 text-sm font-semibold text-[#545333]">
+                        <span className="inline-flex rounded-full border border-[#D1FAE5] bg-[#D1FAE5]/40 px-4 py-2 text-sm font-semibold text-[#15803D]">
 
-            Category
+                          Category
 
-          </span>
+                        </span>
 
-          <h2 className="mt-4 text-4xl font-black text-[#545333]">
+                        <h2 className="mt-4 text-4xl font-black text-[#15803D]">
 
-            {category}
+                          {category}
 
-          </h2>
+                        </h2>
 
-        </div>
+                      </div>
 
-        <div className="rounded-full border border-[#D9D7B6] bg-[#FDFBD4] px-5 py-2 font-semibold text-[#545333] shadow-sm">
+                      <div className="rounded-full border border-[#D1FAE5] bg-[#ECFDF5] px-5 py-2 font-semibold text-[#15803D] shadow-sm">
 
-          {list.length} Products
+                        {list.length} Products
 
-        </div>
+                      </div>
 
-      </div>
+                    </div>
 
-      {/* Products */}
+                    {/* Products */}
 
-      <div className="space-y-8">
+                    <div className="space-y-8">
 
-        {list.map((product) => (
+                      {list.map((product) => (
 
-          <div
-            key={product.slug}
-            id={product.slug}
-            className="group rounded-[32px] border border-[#D9D7B6] bg-white/85 p-7 shadow-xl backdrop-blur transition-all duration-500 hover:-translate-y-2 hover:bg-[#545333] hover:shadow-2xl"
-          >
+                        <div
+                          key={product.slug}
+                          id={product.slug}
+                          className="group rounded-[32px] border border-[#D1FAE5] bg-white/85 p-7 shadow-xl backdrop-blur transition-all duration-500 hover:-translate-y-2 hover:bg-[#15803D] hover:shadow-2xl"
+                        >
 
-            <div className="grid items-center gap-8 lg:grid-cols-[250px_1fr_190px]">
+                          <div className="grid items-center gap-8 lg:grid-cols-[250px_1fr_190px]">
 
-              {/* Image */}
+                            {/* Image */}
 
-              <div className="flex h-[220px] items-center justify-center overflow-hidden rounded-3xl border border-[#D9D7B6] bg-gradient-to-br from-[#FDFBD4] via-white to-[#D9D7B6]">
+                            <div className="flex h-[220px] items-center justify-center overflow-hidden rounded-3xl border border-[#D1FAE5] bg-gradient-to-br from-[#ECFDF5] via-white to-[#D1FAE5]">
 
-                <Image
-                  src={product.image}
-                  alt={product.title}
-                  width={220}
-                  height={220}
-                  className="max-h-[180px] object-contain transition-all duration-500 group-hover:scale-110"
-                />
+                              <Image
+                                src={product.image}
+                                alt={product.title}
+                                width={220}
+                                height={220}
+                                className="max-h-[180px] object-contain transition-all duration-500 group-hover:scale-110"
+                              />
+
+                            </div>
+
+                            {/* Content */}
+
+                            <div>
+
+                              <h3 className="text-2xl font-bold text-[#15803D] transition-colors duration-300 group-hover:text-[#ECFDF5]">
+
+                                {product.title}
+
+                              </h3>
+
+                              <p className="mt-4 leading-8 text-[#64748B] transition-colors duration-300 group-hover:text-[#ECFDF5]/90">
+
+                                {product.description}
+
+                              </p>
+
+                              <div className="mt-6 grid grid-cols-2 gap-4">
+
+                                {/* Brand */}
+
+                                <div className="rounded-2xl border border-[#D1FAE5] bg-[#ECFDF5] p-4 transition-all duration-300 group-hover:bg-[#64748B]">
+
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-[#64748B] group-hover:text-[#ECFDF5]">
+
+                                    Brand
+
+                                  </p>
+
+                                  <p className="mt-2 font-bold text-[#15803D] group-hover:text-white">
+
+                                    {product.brand}
+
+                                  </p>
+
+                                </div>
+
+                                {/* Model */}
+
+                                <div className="rounded-2xl border border-[#D1FAE5] bg-[#ECFDF5] p-4 transition-all duration-300 group-hover:bg-[#64748B]">
+
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-[#64748B] group-hover:text-[#ECFDF5]">
+
+                                    Model
+
+                                  </p>
+
+                                  <p className="mt-2 font-bold text-[#15803D] group-hover:text-white">
+
+                                    {product.model}
+
+                                  </p>
+
+                                </div>
+
+                              </div>
+
+                            </div>
+
+                            {/* Button */}
+
+                            <div className="flex justify-center lg:justify-end">
+
+                              <Link
+                                href={`/products/${product.slug}`}
+                                className="w-full lg:w-auto"
+                              >
+
+                                <button className="w-full rounded-xl bg-[#15803D] px-8 py-4 font-semibold text-[#ECFDF5] shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-[#14532D] hover:shadow-xl lg:w-auto">
+
+                                  View Details →
+
+                                </button>
+
+                              </Link>
+
+                            </div>
+
+                          </div>
+
+                        </div>
+
+                      ))}
+
+                    </div>
+
+                  </section>
+
+                ))}
 
               </div>
-
-              {/* Content */}
-
-              <div>
-
-                <h3 className="text-2xl font-bold text-[#545333] transition-colors duration-300 group-hover:text-[#FDFBD4]">
-
-                  {product.title}
-
-                </h3>
-
-                <p className="mt-4 leading-8 text-[#6A6954] transition-colors duration-300 group-hover:text-[#FDFBD4]/90">
-
-                  {product.description}
-
-                </p>
-
-                <div className="mt-6 grid grid-cols-2 gap-4">
-
-                  {/* Brand */}
-
-                  <div className="rounded-2xl border border-[#D9D7B6] bg-[#FDFBD4] p-4 transition-all duration-300 group-hover:bg-[#878672]">
-
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#878672] group-hover:text-[#FDFBD4]">
-
-                      Brand
-
-                    </p>
-
-                    <p className="mt-2 font-bold text-[#545333] group-hover:text-white">
-
-                      {product.brand}
-
-                    </p>
-
-                  </div>
-
-                  {/* Model */}
-
-                  <div className="rounded-2xl border border-[#D9D7B6] bg-[#FDFBD4] p-4 transition-all duration-300 group-hover:bg-[#878672]">
-
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#878672] group-hover:text-[#FDFBD4]">
-
-                      Model
-
-                    </p>
-
-                    <p className="mt-2 font-bold text-[#545333] group-hover:text-white">
-
-                      {product.model}
-
-                    </p>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-              {/* Button */}
-
-              <div className="flex justify-center lg:justify-end">
-
-                <Link
-                  href={`/products/${product.slug}`}
-                  className="w-full lg:w-auto"
-                >
-
-                  <button className="w-full rounded-xl bg-[#545333] px-8 py-4 font-semibold text-[#FDFBD4] shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-[#45452A] hover:shadow-xl lg:w-auto">
-
-                    View Details →
-
-                  </button>
-
-                </Link>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        ))}
-
-      </div>
-
-    </section>
-
-  ))}
-
-</div>
 
             </div>
 

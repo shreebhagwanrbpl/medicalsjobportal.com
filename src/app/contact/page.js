@@ -1,4 +1,5 @@
 "use client";
+
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -6,9 +7,12 @@ import {
   getDoc,
   addDoc,
   collection,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+} from "@/lib/client-api";
+import { db } from "@/lib/client-api";
 import toast from "react-hot-toast";
+import { fetchContactData } from "@/lib/data-fetcher";
+import { parseContactDetails } from "@/lib/constants";
+
 import {
   Mail,
   Phone,
@@ -16,65 +20,64 @@ import {
   Clock3,
 } from "lucide-react";
 
-import PageBanner from "@/components/PageBanner";
-// import CTASection from "@/components/CTASection";
-
 export default function ContactPage() {
   const [loading, setLoading] = useState(true);
-  const [districtData, setDistrictData] =
-    useState(null);
-  const [contactInfo, setContactInfo] =
-    useState([]);
+  const [districtData, setDistrictData] = useState(null);
+  const [contactData, setContactData] = useState(() => parseContactDetails(null));
+  const [submitting, setSubmitting] = useState(false);
 
-  const [submitting, setSubmitting] =
-    useState(false);
   const pathname = usePathname();
 
-  const pathParts = pathname
-    .split("/")
-    .filter(Boolean);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    subject: "",
+    message: "",
+  });
+
+  const pathParts = pathname ? pathname.split("/").filter(Boolean) : [];
+
+  const staticRoutes = ["about", "services", "products", "contact", "items"];
 
   const currentDistrict =
-    pathParts.length > 0
+    pathParts.length > 0 && !staticRoutes.includes(pathParts[0])
       ? pathParts[0]
       : null;
+
+  // ==========================================================
+  // FORM CHANGE
+  // ==========================================================
   const handleChange = (e) => {
     setForm({
       ...form,
       [e.target.name]: e.target.value,
     });
   };
+
+  // ==========================================================
+  // FORM SUBMIT
+  // ==========================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const emailRegex =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    const phoneRegex =
-      /^[6-9]\d{9}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[6-9]\d{9}$/;
 
     if (!form.name.trim()) {
-      return toast.error(
-        "Name is required"
-      );
+      return toast.error("Name is required");
     }
 
     if (!emailRegex.test(form.email)) {
-      return toast.error(
-        "Enter valid email"
-      );
+      return toast.error("Enter valid email");
     }
 
     if (!phoneRegex.test(form.phone)) {
-      return toast.error(
-        "Enter valid mobile number"
-      );
+      return toast.error("Enter valid mobile number");
     }
 
     if (!form.message.trim()) {
-      return toast.error(
-        "Message is required"
-      );
+      return toast.error("Message is required");
     }
 
     try {
@@ -84,7 +87,7 @@ export default function ContactPage() {
         collection(
           db,
           "websitesQueries",
-          "centralbiomedicals",
+          "medicalsjobportalcom",
           "contactQueries"
         ),
         {
@@ -93,9 +96,7 @@ export default function ContactPage() {
         }
       );
 
-      toast.success(
-        "Message submitted successfully"
-      );
+      toast.success("Message submitted successfully");
 
       setForm({
         name: "",
@@ -105,390 +106,336 @@ export default function ContactPage() {
         message: "",
       });
     } catch (err) {
-      console.error(err);
-      toast.error(
-        "Something went wrong"
-      );
+      console.error("Error submitting contact form:", err);
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    subject: "",
-    message: "",
-  });
-  useEffect(() => {
-    const loadDistrict = async () => {
-      if (!currentDistrict) return;
 
+  // ==========================================================
+  // LOAD DISTRICT
+  // ==========================================================
+  useEffect(() => {
+    let isMounted = true;
+    if (!currentDistrict) {
+      setDistrictData(null);
+      return;
+    }
+
+    const loadDistrict = async () => {
       try {
         const snap = await getDoc(
           doc(
             db,
             "websites",
-            "centralbiomedicals",
+            "medicalsjobportalcom",
             "districts",
             currentDistrict
           )
         );
 
-        if (snap.exists()) {
-          setDistrictData(snap.data());
+        if (isMounted && snap.exists()) {
+          const dData = snap.data();
+          setDistrictData(dData);
+          setContactData((prev) => parseContactDetails(prev, dData));
         }
       } catch (err) {
-        console.log(err);
+        console.error("Error loading district in contact page:", err);
       }
     };
 
     loadDistrict();
+
+    return () => {
+      isMounted = false;
+    };
   }, [currentDistrict]);
+
+  // ==========================================================
+  // LOAD CONTACT
+  // ==========================================================
   useEffect(() => {
+    let isMounted = true;
+
     const loadContact = async () => {
       try {
-        const snap = await getDoc(
-          doc(
-            db,
-            "websites",
-            "centralbiomedicals",
-            "pages",
-            "contact"
-          )
-        );
-
-        if (snap.exists()) {
-          setContactInfo(
-            snap.data().contactInfo || []
-          );
+        const raw = await fetchContactData();
+        if (isMounted && raw) {
+          setContactData(parseContactDetails(raw, districtData));
         }
       } catch (err) {
-        console.log(err);
+        console.error("Error loading contact data:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     loadContact();
-  }, []);
 
+    return () => {
+      isMounted = false;
+    };
+  }, [districtData]);
 
+  const { phones, email, address, workingHours } = contactData;
+  const hasCards = (phones && phones.length > 0) || email || address || workingHours;
 
-  const phone =
-    contactInfo.find(
-      (x) => x.label === "Phone Number"
-    )?.value || "";
-
-  const email =
-    contactInfo.find(
-      (x) => x.label === "Email Address"
-    )?.value || "";
-
-  const address =
-    contactInfo.find(
-      (x) => x.label === "Office Address"
-    )?.value || "";
-
-  const hours =
-    contactInfo.find(
-      (x) => x.label === "Working Hours"
-    )?.value || "";
-
-  const dynamicAddress =
-    districtData
-      ? `${districtData.district}, ${districtData.state}, India`
-      : address;
-
-  const mapAddress = encodeURIComponent(
-    dynamicAddress
-  );
   if (loading) {
     return (
-  <section className="section-padding bg-gradient-to-br from-[#FDFBD4] via-[#FBFAF2] to-[#D9D7B6]">
+      <section className="section-padding bg-white">
+        <div className="container-custom">
+          <div className="grid lg:grid-cols-2 gap-12">
+            <div>
+              <div className="h-12 w-64 bg-slate-200 rounded animate-pulse mb-8" />
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-28 bg-slate-200 rounded-3xl animate-pulse mb-6"
+                />
+              ))}
+            </div>
 
-  <div className="container-custom">
-
-    <div className="grid gap-12 lg:grid-cols-2">
-
-      {/* Left Skeleton */}
-
-      <div>
-
-        <div className="mb-8 h-12 w-64 animate-pulse rounded-xl bg-[#D9D7B6]" />
-
-        {[...Array(4)].map((_, i) => (
-
-          <div
-            key={i}
-            className="mb-6 rounded-3xl border border-[#D9D7B6] bg-white/80 p-6 shadow-lg backdrop-blur"
-          >
-
-            <div className="mb-5 h-8 w-40 animate-pulse rounded-lg bg-[#D9D7B6]" />
-
-            <div className="mb-3 h-4 w-full animate-pulse rounded bg-[#D9D7B6]/80" />
-
-            <div className="mb-3 h-4 w-11/12 animate-pulse rounded bg-[#D9D7B6]/80" />
-
-            <div className="h-4 w-8/12 animate-pulse rounded bg-[#D9D7B6]/80" />
-
+            <div className="bg-white p-10 rounded-3xl border border-[#D1FAE5]">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-14 bg-slate-200 rounded-2xl animate-pulse mb-5"
+                />
+              ))}
+            </div>
           </div>
-
-        ))}
-
-      </div>
-
-      {/* Right Skeleton */}
-
-      <div className="rounded-3xl border border-[#D9D7B6] bg-white/80 p-10 shadow-xl backdrop-blur">
-
-        <div className="mb-8 h-10 w-52 animate-pulse rounded-xl bg-[#D9D7B6]" />
-
-        {[...Array(6)].map((_, i) => (
-
-          <div
-            key={i}
-            className="mb-5 h-14 animate-pulse rounded-2xl bg-[#D9D7B6]/80"
-          />
-
-        ))}
-
-        <div className="mt-8 h-14 w-48 animate-pulse rounded-2xl bg-[#545333]/20" />
-
-      </div>
-
-    </div>
-
-  </div>
-
-</section>
+        </div>
+      </section>
     );
   }
+
   return (
     <>
-      {/* Banner */}
-      <PageBanner
-        title="Contact Us"
-        subtitle="Get in touch with Central Biomedicals for premium diagnostic and biomedical solutions."
-      />
+      {/* ======================================================
+          CONTACT SECTION
+      ====================================================== */}
+      <section className="section-padding bg-white">
+        <div className="container-custom grid lg:grid-cols-2 gap-14">
+          {/* ==================================================
+              LEFT INFO
+          ================================================== */}
+          <div>
+            {/* Badge */}
+            <span className="inline-block bg-[#F0FDF4] border border-[#D1FAE5] text-[#14532D] px-5 py-2 rounded-full font-semibold mb-5">
+              Contact Information
+            </span>
 
-      {/* Contact Section */}
-<section className="relative overflow-hidden section-padding bg-gradient-to-br from-[#FCFAEF] via-[#F7F5E8] to-[#ECE7D0]">
+            {/* Heading */}
+            <h1 className="section-title text-[#0F172A]">
+              Let’s Start a Conversation
+            </h1>
 
-  {/* Background Glow */}
-  <div className="absolute -top-40 -right-40 h-[420px] w-[420px] rounded-full bg-[#878672]/15 blur-[140px]" />
-  <div className="absolute -bottom-40 -left-40 h-[420px] w-[420px] rounded-full bg-[#545333]/10 blur-[160px]" />
+            {/* Description */}
+            <p className="section-subtitle text-[#14532D]">
+              Reach out to us for healthcare consultation, biomedical products, and
+              advanced diagnostic support.
+            </p>
 
-  <div className="container-custom relative grid gap-16 lg:grid-cols-2">
+            {/* ==================================================
+                CONTACT CARDS (ONLY DYNAMIC)
+            ================================================== */}
+            <div className="space-y-6 mt-10">
+              {/* Phone */}
+              {phones && phones.length > 0 ? (
+                <div className="flex items-start gap-5 bg-[#F0FDF4] p-6 rounded-[28px] border border-[#D1FAE5] hover:border-[#22C55E] hover:shadow-[0_15px_40px_rgba(82,88,39,0.12)] transition-all duration-300">
+                  <div className="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-[#14532D] via-[#166534] to-[#22C55E] flex items-center justify-center text-white shadow-md shadow-[#166534]/20">
+                    <Phone size={24} />
+                  </div>
 
-    {/* Left */}
+                  <div>
+                    <h2 className="font-semibold text-lg text-[#0F172A]">
+                      Phone Number
+                    </h2>
 
-    <div>
+                    <div className="space-y-1 mt-2">
+                      {phones.map((num, i) => (
+                        <p key={i} className="text-[#14532D]">
+                          <a
+                            href={`tel:${num.replace(/\s+/g, "")}`}
+                            className="hover:text-[#166534] transition font-medium"
+                          >
+                            {num}
+                          </a>
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
-      <span className="inline-flex rounded-full border border-[#D9D7B6] bg-[#D9D7B6]/40 px-5 py-2 font-semibold text-[#545333]">
+              {/* Email */}
+              {email ? (
+                <div className="flex items-start gap-5 bg-[#F0FDF4] p-6 rounded-[28px] border border-[#D1FAE5] hover:border-[#22C55E] hover:shadow-[0_15px_40px_rgba(82,88,39,0.12)] transition-all duration-300">
+                  <div className="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-[#14532D] via-[#166534] to-[#22C55E] flex items-center justify-center text-white shadow-md shadow-[#166534]/20">
+                    <Mail size={24} />
+                  </div>
 
-        Contact Information
+                  <div>
+                    <h2 className="font-semibold text-lg text-[#0F172A]">
+                      Email Address
+                    </h2>
 
-      </span>
+                    <p className="text-[#14532D] mt-2 break-all font-medium">
+                      <a
+                        href={`mailto:${email}`}
+                        className="hover:text-[#166534] transition"
+                      >
+                        {email}
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              ) : null}
 
-      <h2 className="mt-6 text-4xl font-black leading-tight text-[#545333] lg:text-5xl">
+              {/* Address */}
+              {address ? (
+                <div className="flex items-start gap-5 bg-[#F0FDF4] p-6 rounded-[28px] border border-[#D1FAE5] hover:border-[#22C55E] hover:shadow-[0_15px_40px_rgba(82,88,39,0.12)] transition-all duration-300">
+                  <div className="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-[#14532D] via-[#166534] to-[#22C55E] flex items-center justify-center text-white shadow-md shadow-[#166534]/20">
+                    <MapPin size={24} />
+                  </div>
 
-        Let's Start a Conversation
+                  <div>
+                    <h2 className="font-semibold text-lg text-[#0F172A]">
+                      Office Address
+                    </h2>
 
-      </h2>
+                    <p className="text-[#14532D] mt-2 leading-7 font-medium">
+                      {address}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
 
-      <p className="mt-6 max-w-xl leading-8 text-[#6A6954]">
+              {/* Working Hours */}
+              {workingHours ? (
+                <div className="flex items-start gap-5 bg-[#F0FDF4] p-6 rounded-[28px] border border-[#D1FAE5] hover:border-[#22C55E] hover:shadow-[0_15px_40px_rgba(82,88,39,0.12)] transition-all duration-300">
+                  <div className="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-[#14532D] via-[#166534] to-[#22C55E] flex items-center justify-center text-white shadow-md shadow-[#166534]/20">
+                    <Clock3 size={24} />
+                  </div>
 
-        Reach out to us for biomedical equipment, laboratory solutions,
-        healthcare consultation, installation support and professional
-        diagnostic assistance. Our experts are always ready to help.
+                  <div>
+                    <h2 className="font-semibold text-lg text-[#0F172A]">
+                      Working Hours
+                    </h2>
 
-      </p>
+                    <p className="text-[#14532D] mt-2 font-medium">
+                      {workingHours}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
 
-      <div className="mt-10 space-y-6">
-
-        {[
-          {
-            icon: <Phone size={24} className="text-[#545333] group-hover:text-white" />,
-            title: "Phone Number",
-            value: phone,
-          },
-          {
-            icon: <Mail size={24} className="text-[#545333] group-hover:text-white" />,
-            title: "Email Address",
-            value: email,
-          },
-          {
-            icon: <MapPin size={24} className="text-[#545333] group-hover:text-white" />,
-            title: "Office Address",
-            value: dynamicAddress,
-          },
-          {
-            icon: <Clock3 size={24} className="text-[#545333] group-hover:text-white" />,
-            title: "Working Hours",
-            value: hours,
-          },
-        ].map((item, index) => (
-
-          <div
-            key={index}
-            className="group flex items-start gap-5 rounded-[30px] border border-[#D9D7B6] bg-white p-6 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:border-[#878672] hover:shadow-2xl"
-          >
-
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#D9D7B6] transition-all duration-300 group-hover:bg-[#545333]">
-
-              {item.icon}
-
+              {!hasCards && (
+                <div className="bg-[#F0FDF4] p-6 rounded-[28px] border border-[#D1FAE5] text-slate-500 text-sm">
+                  Contact details will be displayed here once available.
+                </div>
+              )}
             </div>
-
-            <div>
-
-              <h4 className="text-lg font-bold text-[#545333]">
-
-                {item.title}
-
-              </h4>
-
-              <p className="mt-2 leading-7 text-[#6A6954] break-words">
-
-                {item.value}
-
-              </p>
-
-            </div>
-
           </div>
 
-        ))}
+          {/* ==================================================
+              RIGHT FORM
+          ================================================== */}
+          <div className="bg-white rounded-[40px] p-8 lg:p-10 border border-[#D1FAE5] shadow-[0_20px_60px_rgba(82,88,39,0.12)]">
+            <h3 className="text-3xl font-bold text-[#0F172A]">
+              Send Us Message
+            </h3>
 
-      </div>
+            <p className="text-[#14532D] mt-3">
+              Fill out the form and our team will contact you soon.
+            </p>
 
-    </div>
+            {/* FORM */}
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              {/* Name */}
+              <input
+                type="text"
+                name="name"
+                placeholder="Full Name"
+                value={form.name}
+                onChange={handleChange}
+                required
+                className="w-full border border-[#D1FAE5] bg-[#FFFFFF] rounded-2xl px-5 py-4 outline-none text-[#0F172A] placeholder:text-[#16A34A] focus:border-[#166534] focus:ring-2 focus:ring-[#166534]/15 transition"
+              />
 
-    {/* Right Form */}
+              {/* Email */}
+              <input
+                type="email"
+                name="email"
+                placeholder="Email Address"
+                value={form.email}
+                onChange={handleChange}
+                required
+                className="w-full border border-[#D1FAE5] bg-[#FFFFFF] rounded-2xl px-5 py-4 outline-none text-[#0F172A] placeholder:text-[#16A34A] focus:border-[#166534] focus:ring-2 focus:ring-[#166534]/15 transition"
+              />
 
-    <div className="rounded-[40px] border border-[#D9D7B6] bg-white p-10 shadow-xl">
+              {/* Phone */}
+              <input
+                type="tel"
+                name="phone"
+                placeholder="Phone Number"
+                maxLength={10}
+                value={form.phone}
+                required
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    phone: e.target.value.replace(/\D/g, ""),
+                  })
+                }
+                className="w-full border border-[#D1FAE5] bg-[#FFFFFF] rounded-2xl px-5 py-4 outline-none text-[#0F172A] placeholder:text-[#16A34A] focus:border-[#166534] focus:ring-2 focus:ring-[#166534]/15 transition"
+              />
 
-      <span className="inline-flex rounded-full border border-[#D9D7B6] bg-[#D9D7B6]/40 px-4 py-2 text-sm font-semibold text-[#545333]">
 
-        Get In Touch
+              {/* Message */}
+              <textarea
+                rows={5}
+                name="message"
+                placeholder="Your Message"
+                value={form.message}
+                onChange={handleChange}
+                required
+                className="w-full border border-[#D1FAE5] bg-[#FFFFFF] rounded-2xl px-5 py-4 outline-none text-[#0F172A] placeholder:text-[#16A34A] focus:border-[#166534] focus:ring-2 focus:ring-[#166534]/15 transition resize-none"
+              />
 
-      </span>
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-[#166534] text-white hover:text-white py-4 rounded-2xl font-semibold shadow-lg shadow-[#166534]/20 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#166534]/25 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              >
+                {submitting ? "Submitting..." : "Send Message"}
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
 
-      <h3 className="mt-5 text-3xl font-black text-[#545333]">
-
-        Send Us a Message
-
-      </h3>
-
-      <p className="mt-3 leading-7 text-[#6A6954]">
-
-        Fill out the form below and our team will contact you shortly with the
-        best biomedical solution for your requirements.
-
-      </p>
-
-      <form
-        onSubmit={handleSubmit}
-        className="mt-8 space-y-5"
-      >
-
-        <input
-          type="text"
-          name="name"
-          placeholder="Full Name"
-          value={form.name}
-          onChange={handleChange}
-          className="w-full rounded-2xl border border-[#D9D7B6] bg-white px-5 py-4 text-[#545333] outline-none transition-all duration-300 placeholder:text-[#878672] focus:border-[#545333] focus:ring-4 focus:ring-[#545333]/15"
-        />
-
-        <input
-          type="email"
-          name="email"
-          placeholder="Email Address"
-          value={form.email}
-          onChange={handleChange}
-          className="w-full rounded-2xl border border-[#D9D7B6] bg-white px-5 py-4 text-[#545333] outline-none transition-all duration-300 placeholder:text-[#878672] focus:border-[#545333] focus:ring-4 focus:ring-[#545333]/15"
-        />
-
-        <input
-          type="tel"
-          name="phone"
-          placeholder="Phone Number"
-          maxLength={10}
-          value={form.phone}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              phone: e.target.value.replace(/\D/g, ""),
-            })
-          }
-          className="w-full rounded-2xl border border-[#D9D7B6] bg-white px-5 py-4 text-[#545333] outline-none transition-all duration-300 placeholder:text-[#878672] focus:border-[#545333] focus:ring-4 focus:ring-[#545333]/15"
-        />
-
-        <input
-          type="text"
-          name="subject"
-          placeholder="Subject"
-          value={form.subject}
-          onChange={handleChange}
-          className="w-full rounded-2xl border border-[#D9D7B6] bg-white px-5 py-4 text-[#545333] outline-none transition-all duration-300 placeholder:text-[#878672] focus:border-[#545333] focus:ring-4 focus:ring-[#545333]/15"
-        />
-
-        <textarea
-          rows={5}
-          name="message"
-          placeholder="Your Message"
-          value={form.message}
-          onChange={handleChange}
-          className="w-full resize-none rounded-2xl border border-[#D9D7B6] bg-white px-5 py-4 text-[#545333] outline-none transition-all duration-300 placeholder:text-[#878672] focus:border-[#545333] focus:ring-4 focus:ring-[#545333]/15"
-        />
-
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-2xl bg-gradient-to-r from-[#545333] to-[#6B6A45] py-4 font-semibold text-white shadow-xl transition-all duration-300 hover:-translate-y-1 hover:from-[#45452A] hover:to-[#545333] hover:shadow-2xl disabled:cursor-not-allowed disabled:opacity-70"
-        >
-
-          {submitting ? "Submitting..." : "Send Message"}
-
-        </button>
-
-      </form>
-
-    </div>
-
-  </div>
-
-</section>
-
-      {/* Google Map */}
-<section className="relative overflow-hidden pb-24 bg-gradient-to-br from-[#FCFAEF] via-[#F7F5E8] to-[#ECE7D0]">
-
-  {/* Background Glow */}
-
-  <div className="absolute -top-40 -right-40 h-[420px] w-[420px] rounded-full bg-[#878672]/15 blur-[150px]" />
-
-  <div className="absolute -bottom-40 -left-40 h-[420px] w-[420px] rounded-full bg-[#545333]/10 blur-[170px]" />
-
-  <div className="container-custom relative">
-
-    <div className="overflow-hidden rounded-[42px] border border-[#D9D7B6] bg-white p-4 shadow-xl transition-all duration-500 hover:shadow-2xl">
-
-      <iframe
-        src={`https://maps.google.com/maps?q=${mapAddress}&z=13&output=embed`}
-        loading="lazy"
-        className="h-[500px] w-full rounded-[32px] border-0"
-      />
-
-    </div>
-
-  </div>
-
-</section>
-
-      {/* CTA */}
-      {/* <CTASection /> */}
+      {/* ======================================================
+          GOOGLE MAP (ONLY IF DYNAMIC ADDRESS EXISTS)
+      ====================================================== */}
+      {address ? (
+        <section className="pb-24 bg-white">
+          <div className="container-custom">
+            <div className="rounded-[40px] overflow-hidden border border-[#D1FAE5] shadow-lg shadow-[#166534]/10">
+              <iframe
+                title="Office Location"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(address)}&z=13&output=embed`}
+                width="100%"
+                height="500"
+                loading="lazy"
+                className="border-0 w-full"
+              ></iframe>
+            </div>
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

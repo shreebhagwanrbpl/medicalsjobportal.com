@@ -1,17 +1,19 @@
 import ProductDetails from "./ProductDetails";
+import { fetchProductBySlug, fetchContactDetails } from "@/lib/data-fetcher-server";
 
 export async function generateMetadata({ params }) {
     const { slug } = await params;
+    const product = await fetchProductBySlug(slug);
 
-    const productName = slug
+    const productName = product?.title || slug
         ?.replace(/-/g, " ")
         ?.replace(/\b\w/g, (c) => c.toUpperCase());
 
-    const title = `${productName} Supplier in India | Price, Dealer & Distributor | Central Biomedicals`;
+    const title = `${productName} Supplier in India | Price, Dealer & Distributor | Raj Biosis`;
 
-    const description = `Buy ${productName} at best price in India. Trusted supplier, dealer and distributor of ${productName} for hospitals, laboratories, diagnostic centers, research institutes and healthcare facilities. Contact Central Biomedicals for latest quotation and product details.`;
+    const description = product?.description || product?.desc || `Buy ${productName} at best price in India. Trusted supplier, dealer and distributor of ${productName} for hospitals, laboratories, diagnostic centers, research institutes and healthcare facilities. Contact Raj Biosis for latest quotation and product details.`;
 
-    const url = `https://centralbiomedicals.com/items/${slug}`;
+    const url = `https://medicalsjobportal.com/items/${slug}`;
 
     return {
         title,
@@ -39,7 +41,7 @@ export async function generateMetadata({ params }) {
             "Diagnostic Equipment",
             "Hospital Equipment",
             "Healthcare Equipment",
-            "Central Biomedicals",
+            "Raj Biosis",
         ],
 
         alternates: {
@@ -50,7 +52,7 @@ export async function generateMetadata({ params }) {
             title,
             description,
             url,
-            siteName: "Central Biomedicals",
+            siteName: "Raj Biosis",
             type: "website",
             locale: "en_IN",
         },
@@ -73,12 +75,22 @@ export async function generateMetadata({ params }) {
             },
         },
 
-        metadataBase: new URL("https://centralbiomedials.com"),
+        metadataBase: new URL("https://medicalsjobportal.com"),
     };
 }
 
 export default async function Page({ params }) {
     const { slug } = await params;
+    const [product, contactData] = await Promise.all([
+        fetchProductBySlug(slug),
+        fetchContactDetails(),
+    ]);
 
-    return <ProductDetails slug={slug} />;
+    return (
+        <ProductDetails
+            slug={slug}
+            initialProduct={product}
+            initialContactData={contactData}
+        />
+    );
 }
